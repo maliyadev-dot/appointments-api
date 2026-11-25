@@ -2,9 +2,33 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
+# In-memory storage for appointments
 appointments =[]
 next_id = 1
 
+# Helpers
+def validate_appointment_body(data):
+    # Handle missing or non-JSON body
+    if not isinstance(data, dict):
+        return False, {"body": "Request body must be a JSON object."}
+
+    errors = {}
+
+    title = data.get("title")
+    start_time = data.get("start_time")
+
+    if not isinstance(title, str) or not title.strip():
+        errors["title"] = "Title is required and must be a non-empty string."
+
+    if not isinstance(start_time, str):
+        errors["start_time"] = "Start time is required and must be a string."
+
+    if errors:
+        return False, errors
+
+    return True, {}
+
+# API Endpoints
 @app.route('/appointments', methods=['GET'])
 def get_appointments():
     return jsonify(appointments), 200
@@ -13,6 +37,10 @@ def get_appointments():
 def create_appointment():
     global next_id
     data = request.get_json()
+
+    is_valid, errors = validate_appointment_body(data)
+    if not is_valid:
+        return jsonify({"errors": errors}), 400
 
     appointment = {
         "id": next_id,
@@ -37,6 +65,11 @@ def get_appointment(appointment_id):
 @app.route('/appointments/<int:appointment_id>', methods=['PUT'])
 def update_appointment(appointment_id):
     data = request.get_json()
+
+    is_valid, errors = validate_appointment_body(data)
+    if not is_valid:
+        return jsonify({"errors": errors}), 400
+
     for appointment in appointments:
         if appointment["id"] == appointment_id:
             appointment["title"] = data.get("title")
