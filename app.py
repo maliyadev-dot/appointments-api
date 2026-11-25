@@ -1,6 +1,8 @@
 from flask import Flask, jsonify, request
+from flasgger import Swagger
 
 app = Flask(__name__)
+swagger = Swagger(app)
 
 # In-memory storage for appointments
 appointments =[]
@@ -31,10 +33,71 @@ def validate_appointment_body(data):
 # API Endpoints
 @app.route('/appointments', methods=['GET'])
 def get_appointments():
+    """
+    Get all appointments
+    ---
+    tags:
+      - Appointments
+    responses:
+      200:
+        description: List of appointments
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  start_time:
+                    type: string
+                  duration:
+                    type: string
+                  location:
+                    type: string
+    """
     return jsonify(appointments), 200
 
 @app.route('/appointments', methods=['POST'])
 def create_appointment():
+    """
+    Create a new appointment
+    ---
+    tags:
+      - Appointments
+    consumes:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            title:
+              type: string
+              example: "Dentist"
+            start_time:
+              type: string
+              example: "2026-11-25T10:00"
+            duration:
+              type: string
+              example: "30m"
+            location:
+              type: string
+              example: "Clinic"
+          required:
+            - title
+            - start_time
+    responses:
+      201:
+        description: Appointment created
+      400:
+        description: Validation error
+    """
     global next_id
     data = request.get_json()
 
@@ -56,6 +119,23 @@ def create_appointment():
 
 @app.route('/appointments/<int:appointment_id>', methods=['GET'])
 def get_appointment(appointment_id):
+    """
+    Get a single appointment by ID
+    ---
+    tags:
+      - Appointments
+    parameters:
+      - in: path
+        name: appointment_id
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Appointment found
+      404:
+        description: Appointment not found
+    """
     for appointment in appointments:
         if appointment["id"] == appointment_id:
             return jsonify(appointment), 200
